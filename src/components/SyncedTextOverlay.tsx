@@ -1,7 +1,6 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import { MotionValue, useMotionValueEvent, useScroll, useTransform } from "framer-motion";
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { MotionValue, motion, useMotionValueEvent, useScroll, useTransform } from "framer-motion";
 import { TextGenerateEffect } from "./ui/text-generate-effect";
 import { CrossfadeText } from "./CrossfadeText";
 import { ExternalLink } from "lucide-react";

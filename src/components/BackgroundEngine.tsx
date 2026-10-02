@@ -1,6 +1,7 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useEffect, useState } from "react";
-import palette from "../colorPalette.json";
+import _palette from "../colorPalette.json";
+const palette = _palette as Record<string, string>;
 
 const SEQUENCE = [6, 7, 9, 8, 4, 5, 3, 1, 2, 11, 10, 13, 12];
 const colorStops = SEQUENCE.map((_, i) => i / (SEQUENCE.length - 1));
