@@ -1,9 +1,13 @@
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import BackgroundEngine from "./components/BackgroundEngine";
 import ScrollSections from "./components/ScrollSections";
 import SyncedTextOverlay from "./components/SyncedTextOverlay";
 import { ProgressiveBlur } from "./components/ui/progressive-blur";
 import { DustParticles } from "./components/DustParticles";
 import { CrossfadeText } from "./components/CrossfadeText";
+import LoadingScreen from "./components/LoadingScreen";
+import { useLenis } from "./hooks/useLenis";
 import { Send } from "lucide-react";
 
 function GithubIcon({ className }: { className?: string }) {
@@ -15,61 +19,69 @@ function GithubIcon({ className }: { className?: string }) {
 }
 
 export default function App() {
+  const [loaded, setLoaded] = useState(false);
+
+  // Boot Lenis — adds momentum/inertia to native wheel scroll.
+  // Framer Motion's useScroll reads from the real DOM scrollTop,
+  // which Lenis updates every frame, so everything stays in sync.
+  useLenis();
+
   return (
-    <main className="relative w-full font-sans overflow-x-hidden selection:bg-white/20 selection:text-white">
-      {/* Layer 0: background images */}
-      <BackgroundEngine />
+    <>
+      {/* Loading screen — sits above everything, fades out once hero image is ready */}
+      <LoadingScreen onComplete={() => setLoaded(true)} />
 
-      {/* Layer 1: dust particles */}
-      <DustParticles />
-
-      {/* Layer 2: scroll-synced text (fixed, driven by scrollYProgress — never in a crossfade) */}
-      <SyncedTextOverlay />
-
-      {/* Layer 3: scroll spacers (control pacing, no text) */}
-      <ScrollSections />
-
-      {/* Layer 4: progressive blur + footer pinned at the bottom */}
-      <ProgressiveBlur height="130px" position="bottom" className="fixed bottom-0 z-40 pointer-events-none" />
-
-      <footer className="fixed bottom-0 w-full z-50 pb-5 flex flex-col items-center gap-2.5 text-white/40 pointer-events-auto">
-        {/* Name crossfade */}
-        <CrossfadeText
-          words={["Kouhai", "luv"]}
-          interval={4500}
-          className="font-serif lowercase text-sm tracking-[0.15em] text-[var(--primary-accent)] transition-colors duration-500"
-        />
-
-        {/* Links row */}
-        <div className="flex items-center gap-6 text-[0.6rem] uppercase tracking-[0.22em]">
-          <a
-            href="https://github.com/Lovelakshya1"
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1.5 hover:text-[var(--primary-accent)] transition-colors duration-300"
+      {/* Main portfolio — fades in after loading screen exits */}
+      <AnimatePresence>
+        {loaded && (
+          <motion.main
+            key="portfolio"
+            className="relative w-full font-sans overflow-x-hidden selection:bg-white/20 selection:text-white"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
           >
-            <GithubIcon className="w-3 h-3" />
-            <span>Lovelakshya1</span>
-          </a>
+            <BackgroundEngine />
+            <DustParticles />
+            <SyncedTextOverlay />
+            <ScrollSections />
 
-          <span className="opacity-20">·</span>
+            <ProgressiveBlur height="130px" position="bottom" className="fixed bottom-0 z-40 pointer-events-none" />
 
-          <a
-            href="https://t.me/lovelakshya"
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1.5 hover:text-[var(--primary-accent)] transition-colors duration-300"
-          >
-            <Send className="w-3 h-3" />
-            <span>@lovelakshya</span>
-          </a>
-        </div>
-
-        {/* Copyright notice */}
-        <p className="text-[0.5rem] uppercase tracking-[0.25em] opacity-30">
-          All rights reserved to MAPPA / Tatsuki Fujimoto
-        </p>
-      </footer>
-    </main>
+            <footer className="fixed bottom-0 w-full z-50 pb-5 flex flex-col items-center gap-2.5 text-white/40 pointer-events-auto">
+              <CrossfadeText
+                words={["Kouhai", "luv"]}
+                interval={4500}
+                className="font-serif lowercase text-sm tracking-[0.15em] text-[var(--primary-accent)] transition-colors duration-500"
+              />
+              <div className="flex items-center gap-6 text-[0.6rem] uppercase tracking-[0.22em]">
+                <a
+                  href="https://github.com/Lovelakshya1"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1.5 hover:text-[var(--primary-accent)] transition-colors duration-300"
+                >
+                  <GithubIcon className="w-3 h-3" />
+                  <span>Lovelakshya1</span>
+                </a>
+                <span className="opacity-20">·</span>
+                <a
+                  href="https://t.me/lovelakshya"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1.5 hover:text-[var(--primary-accent)] transition-colors duration-300"
+                >
+                  <Send className="w-3 h-3" />
+                  <span>@lovelakshya</span>
+                </a>
+              </div>
+              <p className="text-[0.5rem] uppercase tracking-[0.25em] opacity-30">
+                All rights reserved to MAPPA / Tatsuki Fujimoto
+              </p>
+            </footer>
+          </motion.main>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
