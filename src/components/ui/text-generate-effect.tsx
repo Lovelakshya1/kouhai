@@ -43,20 +43,17 @@ export const TextGenerateEffect = ({
   // AE Deep Glow — three concentric passes for titles,
   // subtle black shadow for body text
   const glowStyle: React.CSSProperties = useAccent
-    ? {
-        color: "var(--primary-accent)",
-        // Animate filter via CSS transition so color shifts also animate the glow
-        filter: [
-          "drop-shadow(0px 0px 3px var(--primary-accent))",
-          "drop-shadow(0px 0px 14px var(--primary-accent))",
-          "drop-shadow(0px 0px 45px var(--primary-accent))",
-          "drop-shadow(0px 4px 80px var(--primary-accent))",
-        ].join(" "),
-        transition: "color 0.6s ease, filter 0.6s ease",
-      }
-    : {
-        textShadow: "0 2px 30px rgba(0,0,0,1), 0 1px 6px rgba(0,0,0,1)",
-      };
+  ? {
+      color: "color-mix(in srgb, var(--primary-accent) 55%, white)",
+      textShadow: [
+        "0 0 6px color-mix(in srgb, var(--primary-accent) 90%, transparent)",
+        "0 0 24px color-mix(in srgb, var(--primary-accent) 70%, transparent)",
+        "0 0 64px color-mix(in srgb, var(--primary-accent) 50%, transparent)",
+        "0 2px 16px rgba(0,0,0,0.7)",
+      ].join(", "),
+      transition: "color 0.6s ease, text-shadow 0.6s ease",
+    }
+  : { textShadow: "0 2px 30px rgba(0,0,0,1), 0 1px 6px rgba(0,0,0,1)" };
 
   return (
     <motion.div ref={scope} className={cn("", className)}>
