@@ -9,13 +9,16 @@ export default function LoadingScreen({ onComplete }: { onComplete: () => void }
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const src = window.innerWidth < 768 ? HERO_MOBILE : HERO_IMAGE;
+    const isMobile =
+      window.innerWidth < 768 ||
+      window.matchMedia("(max-width: 767px)").matches;
+    const src = isMobile ? HERO_MOBILE : HERO_IMAGE;
     const img = new Image();
     img.src = src;
 
     const done = () => {
       // Small intentional delay so the fade feels cinematic, not abrupt
-      setTimeout(() => setReady(true), 400);
+      setTimeout(() => setReady(true), 350);
     };
 
     if (img.complete) {
@@ -25,8 +28,8 @@ export default function LoadingScreen({ onComplete }: { onComplete: () => void }
       img.onerror = done; // fail silently — still show the page
     }
 
-    // Safety net: show the page after 4s max regardless
-    const timeout = setTimeout(() => setReady(true), 4000);
+    // Safety net: show the page after 3.5s max regardless
+    const timeout = setTimeout(() => setReady(true), 3500);
     return () => clearTimeout(timeout);
   }, []);
 
@@ -43,7 +46,7 @@ export default function LoadingScreen({ onComplete }: { onComplete: () => void }
       {!ready && (
         <motion.div
           key="loader"
-          className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center"
+          className="fixed top-0 left-0 w-full h-[100vh] min-h-[100lvh] z-[100] bg-black flex flex-col items-center justify-center pointer-events-none"
           exit={{ opacity: 0 }}
           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
         >

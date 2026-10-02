@@ -2,23 +2,29 @@ import { useEffect } from "react";
 import Lenis from "lenis";
 
 /**
- * Initialises a Lenis smooth-scroll instance.
- * Lenis intercepts wheel/touch events and replays them with
- * lerp-based inertia, so the whole page feels like it's floating.
+ * Initialises Lenis smooth-scroll ONLY on precision pointer devices (mouse / trackpad).
  *
- * Framer Motion's useScroll reads from the real DOM scrollTop,
- * which Lenis updates on every frame — so BackgroundEngine and
- * SyncedTextOverlay both get the smoothed value automatically.
+ * On mobile/touch devices, we deliberately bypass Lenis to preserve the phone's
+ * native hardware-accelerated momentum touch scrolling. This eliminates all touch
+ * latency and rubber-band stutter on phones.
  */
 export function useLenis() {
   useEffect(() => {
+    // Detect mobile touch devices
+    const isTouch =
+      window.matchMedia("(pointer: coarse)").matches ||
+      "ontouchstart" in window ||
+      navigator.maxTouchPoints > 0;
+
+    // Use native 60/120Hz hardware scrolling on phones
+    if (isTouch) {
+      return;
+    }
+
     const lenis = new Lenis({
-      // How long the inertia "coast" feels — higher = more floaty
       duration: 1.6,
-      // Expo-out easing: starts fast, trails off gently
       easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       smoothWheel: true,
-      // Prevent horizontal scroll interference
       orientation: "vertical",
       gestureOrientation: "vertical",
     });

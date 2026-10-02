@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
-// Ease curve for sinuous organic float
 const FLOAT_EASE = [0.45, 0, 0.55, 1] as const;
 
 export function DustParticles() {
@@ -10,36 +9,47 @@ export function DustParticles() {
     {
       id: number;
       x: number;
-      startY: number; // 0–120 so some start below viewport
+      startY: number;
       size: number;
       duration: number;
       delay: number;
-      xAmplitude: number; // px of sway
-      xFrequency: number; // how many direction changes during drift
+      xAmplitude: number;
+      xFrequency: number;
     }[]
   >([]);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    const p = Array.from({ length: 60 }).map((_, i) => ({
+    const mobile =
+      window.innerWidth < 768 ||
+      window.matchMedia("(pointer: coarse)").matches ||
+      navigator.maxTouchPoints > 0;
+    setIsMobile(mobile);
+
+    // 24 particles on mobile (lightweight, zero GPU lag), 60 on desktop
+    const count = mobile ? 24 : 60;
+    const p = Array.from({ length: count }).map((_, i) => ({
       id: i,
       x: Math.random() * 100,
       startY: Math.random() * 120,
-      size: Math.random() * 2.8 + 0.4,   // 0.4 – 3.2 px
-      duration: Math.random() * 8 + 6,   // 6 – 14 s  ← much faster
-      delay: -(Math.random() * 14),       // random phase
-      xAmplitude: Math.random() * 55 + 15, // 15 – 70 px sway
-      xFrequency: Math.floor(Math.random() * 3) + 2, // 2–4 direction changes
+      size: Math.random() * (mobile ? 2.2 : 2.8) + 0.4,
+      duration: Math.random() * 8 + 6,
+      delay: -(Math.random() * 14),
+      xAmplitude: Math.random() * (mobile ? 30 : 55) + 12,
+      xFrequency: Math.floor(Math.random() * 3) + 2,
     }));
     setParticles(p);
   }, []);
 
   return (
-    <div className="fixed inset-0 w-full h-full pointer-events-none z-10 overflow-hidden">
+    <div
+      className="fixed top-0 left-0 w-full h-[100vh] min-h-[100lvh] pointer-events-none z-10 overflow-hidden"
+      style={{ WebkitTransform: "translateZ(0)", transform: "translateZ(0)" }}
+    >
       {particles.map((p) => {
-        // Build a sinuous X keyframe path based on amplitude & frequency
         const xPath = Array.from({ length: p.xFrequency * 2 + 1 }).map((_, i) => {
           const sign = i % 2 === 0 ? 1 : -1;
-          const scale = 0.6 + 0.4 * (i / (p.xFrequency * 2)); // grows slightly as it rises
+          const scale = 0.6 + 0.4 * (i / (p.xFrequency * 2));
           return `${sign * p.xAmplitude * scale}px`;
         });
 
@@ -53,12 +63,12 @@ export function DustParticles() {
               left: `${p.x}%`,
               top: `${p.startY}%`,
               backgroundColor: "var(--primary-accent)",
-              // Double glow ring so they're bright and reactive
-              boxShadow: [
-                "0 0 4px 1px var(--primary-accent)",
-                "0 0 12px 2px var(--primary-accent)",
-              ].join(", "),
+              boxShadow: isMobile
+                ? "0 0 6px 1px var(--primary-accent)"
+                : "0 0 4px 1px var(--primary-accent), 0 0 12px 2px var(--primary-accent)",
               transition: "background-color 0.4s ease, box-shadow 0.4s ease",
+              WebkitTransform: "translateZ(0)",
+              transform: "translateZ(0)",
             }}
             animate={{
               x: xPath,

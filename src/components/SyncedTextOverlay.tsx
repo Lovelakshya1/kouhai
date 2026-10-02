@@ -72,8 +72,8 @@ function SyncedSection({ index, scrollYProgress, align = "left", children }: Syn
 
   return (
     <motion.div
-      className={`fixed inset-0 z-20 flex flex-col justify-center px-6 md:px-24 ${alignClass} pointer-events-none`}
-      style={{ opacity, filter: sectionFilter }}
+      className={`fixed top-0 left-0 w-full h-[100vh] min-h-[100lvh] z-20 flex flex-col justify-center px-6 md:px-24 ${alignClass} pointer-events-none`}
+      style={{ opacity, filter: sectionFilter, WebkitTransform: "translateZ(0)", transform: "translateZ(0)" }}
     >
       <div className="pointer-events-auto">
         {children(isVisible)}

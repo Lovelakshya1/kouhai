@@ -9,21 +9,38 @@ const colorValues = SEQUENCE.map(num => palette[num.toString()]);
 
 export default function BackgroundEngine() {
   const { scrollYProgress } = useScroll();
-  const [isMobile, setIsMobile] = useState(false);
+  const [isTouch, setIsTouch] = useState(false);
 
-  // Spring-damped scroll value drives the image crossfades.
-  // This adds a secondary layer of inertia ON TOP of Lenis, so image
-  // transitions trail the physical scroll position rather than snapping.
-  // stiffness + damping tuned for a silky but responsive feel.
-  const smoothProgress = useSpring(scrollYProgress, {
+  useEffect(() => {
+    const checkTouch = () => {
+      setIsTouch(
+        window.matchMedia("(pointer: coarse)").matches ||
+        "ontouchstart" in window ||
+        navigator.maxTouchPoints > 0
+      );
+    };
+    checkTouch();
+  }, []);
+
+  // Desktop (mouse wheel): Float momentum spring (stiffness: 40)
+  // Mobile (touch finger): Ultra-responsive spring (stiffness: 280, mass: 0.15)
+  // This ensures finger swipes on mobile track 1:1 with ZERO lag!
+  const desktopSpring = useSpring(scrollYProgress, {
     stiffness: 40,
     damping: 22,
     mass: 0.4,
     restDelta: 0.0001,
   });
 
-  // Color accent still reads from the raw (Lenis-smoothed) value
-  // so the particle/text colors stay in sync with the scene.
+  const mobileSpring = useSpring(scrollYProgress, {
+    stiffness: 280,
+    damping: 36,
+    mass: 0.15,
+    restDelta: 0.0001,
+  });
+
+  const activeProgress = isTouch ? mobileSpring : desktopSpring;
+
   const accentColor = useTransform(scrollYProgress, colorStops, colorValues);
 
   useEffect(() => {
@@ -34,15 +51,16 @@ export default function BackgroundEngine() {
     return unsubscribe;
   }, [accentColor]);
 
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
-
   return (
-    <div className="fixed inset-0 w-full h-full -z-10 bg-black pointer-events-none">
+    <div
+      className="fixed top-0 left-0 w-full -z-10 bg-black pointer-events-none overflow-hidden"
+      style={{
+        height: "100vh",
+        minHeight: "100lvh",
+        WebkitTransform: "translateZ(0)",
+        transform: "translateZ(0)",
+      }}
+    >
       {SEQUENCE.map((imgNum, index) => {
         const total = SEQUENCE.length;
 
@@ -55,36 +73,54 @@ export default function BackgroundEngine() {
         let opacityRange: number[] = [];
         let blurRange: number[] = [];
 
+        // On mobile, cap blur at 10px so GPU fill rate doesn't cause frame drops
+        const maxBlur = isTouch ? 10 : 30;
+
         if (index === 0) {
           inputRange = [0, t2, t3];
           opacityRange = [1, 1, 0];
-          blurRange = [0, 0, 20];
+          blurRange = [0, 0, isTouch ? 8 : 20];
         } else if (index === total - 1) {
           inputRange = [t0, t1, 1];
           opacityRange = [0, 1, 1];
-          blurRange = [30, 0, 0];
+          blurRange = [maxBlur, 0, 0];
         } else {
           inputRange = [t0, t1, t2, t3];
           opacityRange = [0, 1, 1, 0];
-          blurRange = [30, 0, 0, 30];
+          blurRange = [maxBlur, 0, 0, maxBlur];
         }
 
-        // Images use the spring-damped value → buttery crossfades
-        const opacity  = useTransform(smoothProgress, inputRange, opacityRange);
-        const rawBlur  = useTransform(smoothProgress, inputRange, blurRange);
-        const filter   = useTransform(rawBlur, (v) => `blur(${v}px)`);
+        const opacity = useTransform(activeProgress, inputRange, opacityRange);
+        const rawBlur = useTransform(activeProgress, inputRange, blurRange);
+        const filter = useTransform(rawBlur, (v) => `blur(${v}px)`);
 
         return (
           <motion.div
             key={imgNum}
-            style={{ opacity, filter }}
-            className="absolute inset-0 w-full h-full"
+            style={{
+              opacity,
+              filter,
+              WebkitTransform: "translateZ(0)",
+              transform: "translateZ(0)",
+              height: "100vh",
+              minHeight: "100lvh",
+            }}
+            className="absolute top-0 left-0 w-full overflow-hidden"
           >
-            <img
-              src={`/assets/${imgNum}_${isMobile ? "MOBILE" : "DESKTOP"}.webp`}
-              alt=""
-              className="w-full h-full object-cover"
-            />
+            <picture className="w-full h-full block">
+              <source
+                media="(max-width: 767px)"
+                srcSet={`/assets/${imgNum}_MOBILE.webp`}
+              />
+              <img
+                src={`/assets/${imgNum}_DESKTOP.webp`}
+                alt=""
+                className="w-full h-full object-cover select-none pointer-events-none"
+                decoding="async"
+                draggable={false}
+                loading={index === 0 ? "eager" : "lazy"}
+              />
+            </picture>
           </motion.div>
         );
       })}
