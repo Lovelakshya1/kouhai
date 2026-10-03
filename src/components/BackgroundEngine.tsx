@@ -1,6 +1,5 @@
 import { motion, useScroll, useSpring, useTransform } from "framer-motion";
 import { useEffect, useState } from "react";
-import { useScrollFeel } from "../hooks/useScrollFeel";
 import _palette from "../colorPalette.json";
 const palette = _palette as Record<string, string>;
 
@@ -20,26 +19,24 @@ function checkIsTouch() {
 export default function BackgroundEngine() {
   const { scrollYProgress } = useScroll();
   const [isTouch, setIsTouch] = useState(checkIsTouch);
-  const { bgScale } = useScrollFeel();
 
   useEffect(() => {
     setIsTouch(checkIsTouch());
   }, []);
 
-  // Desktop (mouse wheel): Float momentum spring (stiffness: 40)
-  // Mobile (touch finger): Critically-damped buttery spring (stiffness: 90, damping: 10, mass: 0.2)
-  // Gives that tactile, springy luxury feel without ANY molasses lag!
+  // Desktop (mouse wheel): Smooth momentum spring
+  // Mobile (touch): Silky, responsive spring tuned for direct finger glide without lag or rubber-banding
   const desktopSpring = useSpring(scrollYProgress, {
-    stiffness: 40,
+    stiffness: 45,
     damping: 22,
-    mass: 0.4,
+    mass: 0.35,
     restDelta: 0.0001,
   });
 
   const mobileSpring = useSpring(scrollYProgress, {
-    stiffness: 90,
-    damping: 10,
-    mass: 0.2,
+    stiffness: 110,
+    damping: 14,
+    mass: 0.18,
     restDelta: 0.0001,
   });
 
@@ -68,6 +65,7 @@ export default function BackgroundEngine() {
       {SEQUENCE.map((imgNum, index) => {
         const total = SEQUENCE.length;
 
+        // Keyframe boundaries for buttery crossfades
         const t0 = (index - 0.5) / total;
         const t1 = (index + 0.15) / total;
         const t2 = (index + 0.85) / total;
@@ -77,12 +75,13 @@ export default function BackgroundEngine() {
         let opacityRange: number[] = [];
         let blurRange: number[] = [];
 
-        const maxBlur = 30;
+        // 14px atmospheric blur on mobile (fast & dreamy), 24px on desktop
+        const maxBlur = isTouch ? 14 : 24;
 
         if (index === 0) {
           inputRange = [0, t2, t3];
           opacityRange = [1, 1, 0];
-          blurRange = [0, 0, 20];
+          blurRange = [0, 0, isTouch ? 10 : 18];
         } else if (index === total - 1) {
           inputRange = [t0, t1, 1];
           opacityRange = [0, 1, 1];
@@ -95,23 +94,19 @@ export default function BackgroundEngine() {
 
         const opacity = useTransform(activeProgress, inputRange, opacityRange);
         const rawBlur = useTransform(activeProgress, inputRange, blurRange);
-        const desktopFilter = useTransform(rawBlur, (v) => `blur(${v}px)`);
+        const filter = useTransform(rawBlur, (v) => `blur(${v}px)`);
 
         return (
           <motion.div
             key={imgNum}
             style={{
               opacity,
-              // On mobile, use pure hardware texture crossfade (no heavy GPU shader stalls)
-              // On desktop, keep rich 30px Gaussian blur
-              filter: isTouch ? "none" : desktopFilter,
-              // Springy depth zoom on mobile when finger swipes
-              scale: isTouch ? bgScale : 1,
+              filter,
               WebkitTransform: "translateZ(0)",
               transform: "translateZ(0)",
               height: "100vh",
               minHeight: "100lvh",
-              willChange: "opacity, transform",
+              willChange: "opacity, filter",
             }}
             className="absolute top-0 left-0 w-full overflow-hidden"
           >
