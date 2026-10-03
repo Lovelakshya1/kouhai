@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MotionValue, motion, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { useScrollFeel } from "../hooks/useScrollFeel";
 import { TextGenerateEffect } from "./ui/text-generate-effect";
@@ -43,7 +43,7 @@ const LINK =
 interface SyncedSectionProps {
   index: number;
   scrollYProgress: MotionValue<number>;
-  feel: { lift: MotionValue<number>; skewY: MotionValue<number>; reduce: boolean };
+  feel: { textFloat: MotionValue<number>; reduce: boolean; isTouch: boolean };
   align?: "left" | "right" | "center";
   children: (isVisible: boolean) => React.ReactNode;
 }
@@ -75,7 +75,15 @@ function SyncedSection({ index, scrollYProgress, feel, align = "left", children 
   return (
     <motion.div
       className={`fixed top-0 left-0 w-full h-[100vh] min-h-[100lvh] z-20 flex flex-col justify-center px-6 md:px-24 ${alignClass} pointer-events-none`}
-      style={{ opacity, filter: sectionFilter, y: feel.reduce ? 0 : feel.lift, skewY: feel.reduce ? 0 : feel.skewY, willChange: "transform" }}
+      style={{
+        opacity,
+        // On mobile, bypass CPU blur rasterization; on desktop, keep subtle fade blur
+        filter: feel.isTouch ? "none" : sectionFilter,
+        y: feel.reduce ? 0 : feel.textFloat,
+        WebkitTransform: "translateZ(0)",
+        transform: "translateZ(0)",
+        willChange: "opacity, transform",
+      }}
     >
       <div className="pointer-events-auto">
         {children(isVisible)}
@@ -84,12 +92,27 @@ function SyncedSection({ index, scrollYProgress, feel, align = "left", children 
   );
 }
 
+function checkIsTouch() {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia("(pointer: coarse)").matches ||
+    "ontouchstart" in window ||
+    navigator.maxTouchPoints > 0
+  );
+}
+
 // ─── Main Overlay ────────────────────────────────────────────────────────────
 export default function SyncedTextOverlay() {
   const { scrollYProgress } = useScroll();
-  const { lift, skewY } = useScrollFeel();
+  const { textFloat } = useScrollFeel();
   const reduce = !!useReducedMotion();
-  const feel = { lift, skewY, reduce };
+  const [isTouch, setIsTouch] = useState(checkIsTouch);
+
+  useEffect(() => {
+    setIsTouch(checkIsTouch());
+  }, []);
+
+  const feel = { textFloat, reduce, isTouch };
 
   // Typography tokens (editorial, not AI-slop)
   const display = "font-serif font-medium tracking-[-0.02em] leading-none";
