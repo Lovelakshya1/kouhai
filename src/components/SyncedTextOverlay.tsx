@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import { MotionValue, motion, useMotionValueEvent, useScroll, useTransform } from "framer-motion";
+import { MotionValue, motion, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { useScrollFeel } from "../hooks/useScrollFeel";
 import { TextGenerateEffect } from "./ui/text-generate-effect";
 import { CrossfadeText } from "./CrossfadeText";
 import { ExternalLink } from "lucide-react";
@@ -42,11 +43,12 @@ const LINK =
 interface SyncedSectionProps {
   index: number;
   scrollYProgress: MotionValue<number>;
+  feel: { lift: MotionValue<number>; skewY: MotionValue<number>; reduce: boolean };
   align?: "left" | "right" | "center";
   children: (isVisible: boolean) => React.ReactNode;
 }
 
-function SyncedSection({ index, scrollYProgress, align = "left", children }: SyncedSectionProps) {
+function SyncedSection({ index, scrollYProgress, feel, align = "left", children }: SyncedSectionProps) {
   const { fadeInStart, fadeInEnd, fadeOutStart, fadeOutEnd } = textWindow(index);
   const [isVisible, setIsVisible] = useState(index === 0);
 
@@ -73,7 +75,7 @@ function SyncedSection({ index, scrollYProgress, align = "left", children }: Syn
   return (
     <motion.div
       className={`fixed top-0 left-0 w-full h-[100vh] min-h-[100lvh] z-20 flex flex-col justify-center px-6 md:px-24 ${alignClass} pointer-events-none`}
-      style={{ opacity, filter: sectionFilter, WebkitTransform: "translateZ(0)", transform: "translateZ(0)" }}
+      style={{ opacity, filter: sectionFilter, y: feel.reduce ? 0 : feel.lift, skewY: feel.reduce ? 0 : feel.skewY, willChange: "transform" }}
     >
       <div className="pointer-events-auto">
         {children(isVisible)}
@@ -85,6 +87,9 @@ function SyncedSection({ index, scrollYProgress, align = "left", children }: Syn
 // ─── Main Overlay ────────────────────────────────────────────────────────────
 export default function SyncedTextOverlay() {
   const { scrollYProgress } = useScroll();
+  const { lift, skewY } = useScrollFeel();
+  const reduce = !!useReducedMotion();
+  const feel = { lift, skewY, reduce };
 
   // Typography tokens (editorial, not AI-slop)
   const display = "font-serif font-medium tracking-[-0.02em] leading-none";
@@ -94,7 +99,7 @@ export default function SyncedTextOverlay() {
   return (
     <>
       {/* ── 0: HERO (Image 6) ─────────────────────────────────────────────── */}
-      <SyncedSection index={0} scrollYProgress={scrollYProgress} align="center">
+      <SyncedSection index={0} scrollYProgress={scrollYProgress} feel={feel} align="center">
         {(v) => (
           <div className="flex flex-col items-center gap-6 max-w-3xl mx-auto">
             {/* Massive display name */}
@@ -131,7 +136,7 @@ export default function SyncedTextOverlay() {
       {/* ── 1: PAUSE (Image 7) — intentionally empty ──────────────────────── */}
 
       {/* ── 2: ABOUT (Image 9) ────────────────────────────────────────────── */}
-      <SyncedSection index={2} scrollYProgress={scrollYProgress} align="left">
+      <SyncedSection index={2} scrollYProgress={scrollYProgress} feel={feel} align="left">
         {(v) => (
           <div className="max-w-xl">
             <p className={label}>About</p>
@@ -156,7 +161,7 @@ export default function SyncedTextOverlay() {
       {/* ── 3: PAUSE (Image 8) — intentionally empty ──────────────────────── */}
 
       {/* ── 4: HIMMY ANIME (Image 4) ──────────────────────────────────────── */}
-      <SyncedSection index={4} scrollYProgress={scrollYProgress} align="right">
+      <SyncedSection index={4} scrollYProgress={scrollYProgress} feel={feel} align="right">
         {(v) => (
           <div className="max-w-lg">
             <p className={label}>Project 01</p>
@@ -182,7 +187,7 @@ export default function SyncedTextOverlay() {
       </SyncedSection>
 
       {/* ── 5: HIMMY ANIME APP (Image 5) ──────────────────────────────────── */}
-      <SyncedSection index={5} scrollYProgress={scrollYProgress} align="left">
+      <SyncedSection index={5} scrollYProgress={scrollYProgress} feel={feel} align="left">
         {(v) => (
           <div className="max-w-lg">
             <p className={label}>Project 02</p>
@@ -210,7 +215,7 @@ export default function SyncedTextOverlay() {
       {/* ── 6: PAUSE (Image 3) — intentionally empty ──────────────────────── */}
 
       {/* ── 7: HIMMY MANGA (Image 1) ──────────────────────────────────────── */}
-      <SyncedSection index={7} scrollYProgress={scrollYProgress} align="right">
+      <SyncedSection index={7} scrollYProgress={scrollYProgress} feel={feel} align="right">
         {(v) => (
           <div className="max-w-lg">
             <p className={label}>Project 03</p>
@@ -236,7 +241,7 @@ export default function SyncedTextOverlay() {
       </SyncedSection>
 
       {/* ── 8: HIMMY TV (Image 2) ─────────────────────────────────────────── */}
-      <SyncedSection index={8} scrollYProgress={scrollYProgress} align="left">
+      <SyncedSection index={8} scrollYProgress={scrollYProgress} feel={feel} align="left">
         {(v) => (
           <div className="max-w-lg">
             <p className={label}>Project 04</p>
@@ -264,7 +269,7 @@ export default function SyncedTextOverlay() {
       {/* ── 9: PAUSE (Image 11) — intentionally empty ─────────────────────── */}
 
       {/* ── 10: HIMMY MUSIC (Image 10) ────────────────────────────────────── */}
-      <SyncedSection index={10} scrollYProgress={scrollYProgress} align="right">
+      <SyncedSection index={10} scrollYProgress={scrollYProgress} feel={feel} align="right">
         {(v) => (
           <div className="max-w-lg">
             <p className={label}>Project 05</p>
@@ -290,7 +295,7 @@ export default function SyncedTextOverlay() {
       </SyncedSection>
 
       {/* ── 11: OXCY MUSIC (Image 13) ─────────────────────────────────────── */}
-      <SyncedSection index={11} scrollYProgress={scrollYProgress} align="left">
+      <SyncedSection index={11} scrollYProgress={scrollYProgress} feel={feel} align="left">
         {(v) => (
           <div className="max-w-lg">
             <p className={label}>Project 06</p>
